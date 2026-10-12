@@ -1,0 +1,124 @@
+# 渠道注册表 —— 按「渠道类型」给公开代表，不绑定任何个人账号。
+#
+# 加渠道 = 在下面加一段，不改任何 Python 代码。
+# 字段说明见 references/channels.md。
+#
+# auth.key 支持 ${ENV_VAR} 占位，解析顺序：
+#   --set k=v > config/user.yaml > 环境变量 > ~/.workbuddy/models.json 自动发现 > ~/.openclaw/openclaw.json
+#
+# enabled: auto   解析到凭据才启用（推荐）
+# enabled: true   始终出现在候选里（缺凭据会报错而非跳过）
+# enabled: false  停用
+
+channels:
+
+  # ---------- 宿主内置出图（无凭据，保底通道）----------
+  - id: builtin
+    adapter: builtin
+    enabled: auto
+    note: 由宿主自身出图，零配置；缺 seed/多张/参考图等能力，命中 skip_when 时自动跳过
+    caps:
+      max_side: 2048
+      ratios: ["1:1", "16:9", "4:3", "3:4", "9:16", "3:2", "2:3"]
+      negative_prompt: false
+      reference_image: false
+      zh_prompt: strong
+      text_rendering: strong
+      seed: false
+      n: false
+    cost: 0
+    latency: low
+    quality: mid
+    region: local
+    tags: [free, zero-config]
+
+  # ---------- OpenAI 兼容图接口（国内托管，中文强）----------
+  - id: siliconflow
+    adapter: openai_images
+    enabled: auto
+    base_url: https://api.siliconflow.cn/v1
+    model: {default: "Qwen/Qwen-Image", hq: "Qwen/Qwen-Image"}
+    auth: {type: bearer, key: "${SILICONFLOW_API_KEY}"}
+    caps:
+      max_side: 2048
+      ratios: ["1:1", "16:9", "4:3", "3:4", "9:16", "3:2", "2:3"]
+      negative_prompt: true
+      reference_image: false
+      zh_prompt: strong
+      text_rendering: weak
+      seed: true
+      n: true
+    cost: 0.3
+    latency: low
+    quality: mid
+    region: cn
+    tags: [cheap, fast, zh]
+
+  # ---------- 阿里云百炼（非 OpenAI 兼容，独立 adapter）----------
+  - id: dashscope
+    adapter: dashscope
+    enabled: auto
+    base_url: https://dashscope.aliyuncs.com
+    model: {default: "qwen-image-2.0-pro", hq: "qwen-image-2.0-pro"}
+    auth: {type: bearer, key: "${DASHSCOPE_API_KEY}"}
+    caps:
+      max_side: 2048
+      ratios: ["1:1", "16:9", "4:3", "3:4", "9:16", "3:2", "2:3"]
+      negative_prompt: true
+      reference_image: false
+      zh_prompt: strong
+      text_rendering: strong
+      seed: true
+      n: true
+    cost: 0.4
+    latency: mid
+    quality: mid
+    region: cn
+    tags: [zh, text]
+
+  # ---------- OpenAI 官方 / 任意 OpenAI 兼容图接口 ----------
+  - id: openai
+    adapter: openai_images
+    enabled: auto
+    base_url: "${OPENAI_BASE_URL}"
+    base_url_default: https://api.openai.com/v1
+    model: {default: "${OPENAI_MODEL}", hq: "${OPENAI_MODEL}"}
+    model_default: gpt-image-1
+    auth: {type: bearer, key: "${OPENAI_API_KEY}"}
+    caps:
+      max_side: 4096
+      ratios: ["1:1", "16:9", "3:2", "2:3", "4:3", "3:4"]
+      negative_prompt: false
+      reference_image: true
+      zh_prompt: medium
+      text_rendering: strong
+      seed: false
+      n: true
+    cost: 1.0
+    latency: mid
+    quality: high
+    region: global
+    tags: [hq, text]
+
+  # ---------- OpenRouter（对话式出图，国内直连常被地域拦截）----------
+  - id: openrouter
+    adapter: openai_chat
+    enabled: auto
+    base_url: https://openrouter.ai/api/v1
+    model: {default: "google/gemini-2.5-flash-image", hq: "google/gemini-2.5-flash-image"}
+    auth: {type: bearer, key: "${OPENROUTER_API_KEY}"}
+    proxy: "${OPENROUTER_PROXY}"
+    caps:
+      max_side: 4096
+      ratios: ["1:1", "16:9", "4:3", "3:4", "9:16"]
+      negative_prompt: false
+      reference_image: false
+      zh_prompt: strong
+      text_rendering: strong
+      seed: false
+      n: false
+    cost: 0.6
+    latency: mid
+    quality: mid
+    region: needs_proxy
+    tags: [router, text]

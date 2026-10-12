@@ -1,0 +1,175 @@
+# 默认配置（内置，只读）—— 场景 / 负面词 / 构图类型 / 选路策略 / 风格包 / 输出
+# 用户覆盖写到 config/user.yaml，只写要改的字段即可。
+
+defaults:
+  scene: article-illustration
+  profile: default
+  ratio: "16:9"
+  n: 1
+  timeout: 300
+  out_dir: ./output
+  mode: pure-image
+
+# ---------- 负面词库（按具名引用，不再全局生效）----------
+negatives:
+  none: ""
+  no-text: "画面中严禁出现任何文字、汉字、字母、数字、日期、签名、落款、印章、水印、logo、标题、商标、任何可读的字符。"
+  no-garbage: "水印、logo、畸形手指、断肢、过曝、糊边、低分辨率、重复主体。"
+
+# ---------- 场景：限制条件的载体 ----------
+scenes:
+  article-illustration:
+    aliases: [配图, 文章配图, 插画, 手绘, illustration, 氛围图, 插图]
+    pipeline: gen
+    ratio: "16:9"
+    allow_text: false
+    negative: no-text
+    prefer_profile: default
+    postprocess: []
+    note: 文字由排版层负责，画面不写字
+
+  cover:
+    aliases: [封面, 头图, 题图, cover, 主图]
+    pipeline: gen
+    ratio: "16:9"
+    allow_text: true
+    text_directive: 文章封面设计，主体突出、留白合理，整体像一张精致的内容封面而非随手照片
+    negative: no-garbage
+    prefer_profile: default
+    postprocess: [trim]
+
+  infographic:
+    aliases: [信息图, 长图, 数据图, infographic, 排版图]
+    pipeline: html
+    ratio: "3:4"
+    allow_text: true
+    negative: none
+    prefer_profile: default
+    postprocess: [trim]
+    note: 走 HTML 渲染管线，零生图 token
+
+  poster:
+    aliases: [海报, poster, 宣传图]
+    pipeline: gen
+    ratio: "3:4"
+    allow_text: true
+    text_directive: 平面海报设计，有明确的版式结构（主视觉、标题区、信息区），文字排版醒目可读，是一张可以张贴的宣传海报而非照片
+    negative: no-garbage
+    prefer_profile: default
+    postprocess: []
+
+  social-card:
+    aliases: [社媒卡, 图文卡, 卡片图, 小红书图, social card]
+    pipeline: gen
+    ratio: "1:1"
+    allow_text: true
+    text_directive: 社交媒体图文卡片设计，信息层级清晰（大标题+短文案），风格干净适合手机端阅读
+    negative: no-garbage
+    prefer_profile: default
+    postprocess: []
+
+  diagram:
+    aliases: [示意图, 流程图, 架构图, diagram, 关系图]
+    pipeline: html
+    ratio: "16:9"
+    allow_text: true
+    negative: none
+    prefer_profile: default
+    postprocess: [trim]
+    note: 走 HTML + 内联 SVG 渲染
+
+  avatar:
+    aliases: [头像, 图标, icon, logo, 标志]
+    pipeline: gen
+    ratio: "1:1"
+    allow_text: false
+    negative: no-text
+    prefer_profile: default
+    postprocess: [trim]
+
+  photo-realistic:
+    aliases: [写实, 照片, 产品图, realistic, 实拍感]
+    pipeline: gen
+    ratio: "3:2"
+    allow_text: false
+    negative: none
+    prefer_profile: default
+    postprocess: []
+    note: 写实场景不加负面词，避免把质感洗掉
+
+# ---------- 内置精简风格族（无外挂风格包时使用）----------
+styles:
+  line-doodle: {name_zh: 随性线稿涂鸦, name_en: Playful Line Doodle, traits: 松散黑线、少量点色、白底、轮廓优先于细节}
+  ink-wash: {name_zh: 水墨写意, name_en: Ink Wash, traits: 浓淡墨色、留白、笔触可见、纸纹质感}
+  watercolor: {name_zh: 水彩淡彩, name_en: Soft Watercolor, traits: 透明叠色、湿边、纸纹、柔和过渡}
+  pencil-sketch: {name_zh: 铅笔素描, name_en: Pencil Sketch, traits: 单色排线、明暗层次、橡皮擦痕}
+  woodcut: {name_zh: 木刻版画, name_en: Woodcut Print, traits: 粗黑线、刀痕、高对比、有限套色}
+  risograph: {name_zh: 孔版印刷, name_en: Risograph, traits: 专色叠印、颗粒噪点、错位套印、复古配色}
+  flat-vector: {name_zh: 扁平矢量, name_en: Flat Vector, traits: 几何色块、无描边渐变、简洁图标感}
+  minimal-geo: {name_zh: 极简几何, name_en: Minimal Geometric, traits: 基本形构成、大量留白、秩序感}
+  collage: {name_zh: 拼贴, name_en: Collage, traits: 剪纸边缘、材质拼贴、异质并置}
+  pixel: {name_zh: 像素, name_en: Pixel Art, traits: 方格像素、有限调色板、硬边}
+  clay-3d: {name_zh: 黏土立体, name_en: Clay 3D, traits: 圆润体积、柔和全局光、微表面指纹}
+  editorial-cartoon: {name_zh: 社论漫画, name_en: Editorial Cartoon, traits: 夸张比例、讽刺表情、单幅叙事、墨线}
+
+# ---------- 构图类型（配合场景使用）----------
+types:
+  portrait: 人物半身，主体居中，肩部以上入画
+  full-body: 全身入画，留出环境关系
+  scene: 广角场景，人物小于画面三分之一
+  closeup: 局部特写，只保留一个主体细节
+  top-down: 俯视构图，桌面/床面视角
+  metaphor: 抽象隐喻，用物件代替概念，不出现直白人物
+
+# ---------- 选路策略：按能力过滤 + 排序，不是硬编码链 ----------
+profiles:
+  default:   {filter: {},                  sort: [cost asc, latency asc], max_attempts: 4}
+  cheap:     {filter: {tags: [cheap]},     sort: [cost asc],              max_attempts: 3}
+  fast:      {filter: {tags: [fast]},      sort: [latency asc],           max_attempts: 3}
+  hq:        {filter: {tags: [hq, text]},  sort: [quality desc, cost asc], max_attempts: 4}
+  zh-text:   {filter: {caps: {zh_prompt: strong, text_rendering: strong}}, sort: [cost asc], max_attempts: 4}
+  ref-image: {filter: {caps: {reference_image: true}}, sort: [quality desc], max_attempts: 3}
+  local:     {filter: {region: cn},        sort: [cost asc],              max_attempts: 3}
+  builtin:   {filter: {tags: [zero-config]}, sort: [cost asc],            max_attempts: 1}
+
+# ---------- 宿主内置出图：条件性优先 ----------
+builtin:
+  mode: auto
+  skip_when: [reference_image, seed, n_gt_1, nonstandard_size, negative_prompt]
+  note: auto = 本机无任何可用凭据时置顶；已有凭据时排到回退链末尾。命中 skip_when 任一条件则跳过。
+
+# ---------- 外挂风格包（探测，不复制）----------
+style_packs:
+  handraw:
+    discover:
+      - ~/.workbuddy/skills/handraw-style/
+      - ~/.workbuddy/skills/renjian-guancha/vendor/handraw-style-data/
+      - "${IMAGE_GEN_HANDRAW_PATH}"
+    files:
+      styles: styles.json
+      colors: colors.json
+      layouts: layouts.json
+      caps: model_capabilities.json
+    rules:
+      - 编号不写进提示词，防模型把 #042 画进画面
+      - name_activation=strong 时只出风格名 + 主题，不输出 traits
+      - 否则补正向 traits；仍不激活则要求参考图并注入参考隔离指令
+      - traits 只取正向，过滤含 避免、不要、禁止、不准 的子句
+
+# ---------- 图文模式固定后缀 ----------
+modes:
+  pure-image: ""
+  graphic-text: "【如果主题直白包含画面元素那就按主题出图，文案由你来升华，但是不要直接描述画面。 如果主题比较概念化，那么文案和主题尽量保持一致，如果文案较长由你提炼，由你先设计画面隐喻（人类和非人类都行）再出图   。    文字参与构图，图文一体】"
+
+# ---------- 输出 ----------
+output:
+  format_by_suffix: {".png": PNG, ".jpg": JPEG, ".jpeg": JPEG, ".webp": WEBP}
+  jpeg_quality: 90
+  ratio_presets:
+    "1:1": [1328, 1328]
+    "16:9": [1664, 928]
+    "4:3": [1472, 1104]
+    "3:4": [1104, 1472]
+    "3:2": [1536, 1024]
+    "2:3": [1024, 1536]
+    "9:16": [928, 1664]

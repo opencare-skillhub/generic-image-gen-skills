@@ -1,0 +1,64 @@
+# 私有 / 自建 endpoint 示例
+
+写进 `config/user.yaml`（不会进版本库），或追加到 `config/channels.yaml`。
+
+## OpenAI 兼容私有中继
+
+```yaml
+channels:
+  - id: my-relay
+    adapter: openai_images
+    enabled: auto
+    base_url: https://relay.example.com/v1
+    model: {default: "gpt-image-1.5", hq: "gpt-image-2"}
+    auth: {type: bearer, key: "${MY_RELAY_API_KEY}"}
+    caps:
+      max_side: 2048
+      ratios: ["1:1", "16:9", "3:2"]
+      negative_prompt: false
+      reference_image: false
+      zh_prompt: strong
+      text_rendering: strong
+      seed: false
+      n: true
+    cost: 0.5
+    latency: mid
+    quality: high
+    region: global
+    tags: [hq, text]
+```
+
+调用：
+
+```bash
+python3 scripts/img.py --theme "…" --channel my-relay --out /abs/o.png
+```
+
+## 非标准 HTTP 接口（generic）
+
+```yaml
+channels:
+  - id: my-http
+    adapter: generic
+    enabled: auto
+    base_url: https://api.example.com
+    auth: {type: bearer, key: "${MY_HTTP_KEY}"}
+    generic:
+      url: https://api.example.com/draw
+      request_template: {model: "${model}", prompt: "${prompt}", width: 1664, height: 928}
+      response_jsonpath: data.0.url
+    caps: {max_side: 2048, ratios: ["16:9"], zh_prompt: medium, text_rendering: weak}
+    cost: 0.4
+    latency: mid
+    quality: mid
+    region: global
+    tags: [cheap]
+```
+
+## 带代理的渠道
+
+```yaml
+channels:
+  - id: openrouter
+    proxy: http://127.0.0.1:7890
+```

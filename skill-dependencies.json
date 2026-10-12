@@ -1,0 +1,210 @@
+{
+  "schema_version": "1",
+  "capabilities": ["generate-image", "compose-prompt", "render-html", "postprocess", "style-pack"],
+  "dependencies": [
+    {
+      "id": "python-runtime",
+      "type": "runtime",
+      "required": true,
+      "auth_type": "none",
+      "capabilities": ["generate-image"],
+      "checks": [
+        {"id": "python-version", "type": "python", "required": true, "min_version": "3.10"}
+      ],
+      "setup": {
+        "official_home_url": "https://www.python.org",
+        "official_docs_url": "https://docs.python.org/zh-cn/3/",
+        "download_url": "https://www.python.org/downloads/",
+        "steps": ["安装 Python 3.10 及以上版本", "确认 python3 --version 输出不低于 3.10"],
+        "verify": "python3 --version",
+        "security": "使用官方安装包或系统包管理器，不执行来源不明的安装脚本",
+        "verified_at": "2026-10-12",
+        "applies_to_version": "Python 3.10+"
+      },
+      "degradation": [
+        {
+          "capability": "generate-image",
+          "trigger": "Python 低于 3.10",
+          "fallback": "停止执行并提示升级",
+          "user_input": "升级 Python 后重试",
+          "limitations": "脚本使用 3.10 起可用的类型注解语法，低版本无法运行",
+          "evidence_label": "已验证",
+          "recovery": "安装 Python 3.10+ 并把 python3 指向新版本",
+          "stop_condition": "无法提供 Python 3.10+ 时不执行任何出图流程"
+        }
+      ]
+    },
+    {
+      "id": "image-provider-api",
+      "type": "api",
+      "required": true,
+      "auth_type": "api-key",
+      "capabilities": ["generate-image"],
+      "checks": [
+        {"id": "siliconflow-key", "type": "env", "required": false, "name": "SILICONFLOW_API_KEY"},
+        {"id": "dashscope-key", "type": "env", "required": false, "name": "DASHSCOPE_API_KEY"},
+        {"id": "openai-key", "type": "env", "required": false, "name": "OPENAI_API_KEY"},
+        {"id": "openrouter-key", "type": "env", "required": false, "name": "OPENROUTER_API_KEY"},
+        {"id": "workbuddy-models", "type": "json_field", "required": false, "path": "~/.workbuddy/models.json", "field": "0.apiKey"},
+        {"id": "provider-auth", "type": "auth_probe", "required": true, "target": "image-provider-api"},
+        {"id": "siliconflow-reachable", "type": "url", "required": false, "url": "https://api.siliconflow.cn/v1", "method": "GET", "expected_status": [200, 401, 403, 404]}
+      ],
+      "setup": {
+        "official_home_url": "https://www.siliconflow.cn",
+        "official_docs_url": "https://docs.siliconflow.cn",
+        "login_url": "https://cloud.siliconflow.cn",
+        "credential_url": "https://cloud.siliconflow.cn/account/ak",
+        "console_path": ["登录", "账户管理", "API 密钥", "新建密钥"],
+        "scopes": ["图像生成接口调用"],
+        "credential_storage": "环境变量 SILICONFLOW_API_KEY，或本机 ~/.workbuddy/models.json（WorkBuddy 模型管理）",
+        "steps": [
+          "在服务商控制台创建 API 密钥",
+          "写入环境变量或交给 WorkBuddy 模型管理托管，不要写进 config/ 下会被提交的文件",
+          "运行 img.py doctor 确认渠道变为可用"
+        ],
+        "verify": "img.py list --channels 中该渠道显示可用",
+        "rotate_or_revoke": "在服务商控制台的 API 密钥页删除旧密钥并新建；同步更新环境变量或模型管理配置",
+        "security": "密钥只在本地保存，不写进提示词、日志或交付文件；泄露后立即在控制台吊销",
+        "verified_at": "2026-10-12",
+        "applies_to_version": "SiliconFlow / 阿里云百炼 / OpenAI / OpenRouter 等兼容接口"
+      },
+      "degradation": [
+        {
+          "capability": "generate-image",
+          "trigger": "所有渠道都解析不到凭据",
+          "fallback": "回退到宿主内置出图（builtin adapter），img.py 以退出码 10 输出 handoff JSON",
+          "user_input": "无需操作；需要 seed、多张、参考图时改为配置一个真实渠道",
+          "limitations": "内置出图不支持 seed、多张并列、参考图垫图、负面词，结果不可复现",
+          "evidence_label": "部分验证",
+          "recovery": "按 references/setup-guide.md 配置任一渠道密钥",
+          "stop_condition": "宿主也不提供出图能力时停止，不猜测结果"
+        }
+      ]
+    },
+    {
+      "id": "handraw-style-pack",
+      "type": "local-tool",
+      "required": false,
+      "auth_type": "none",
+      "capabilities": ["style-pack", "compose-prompt"],
+      "checks": [
+        {"id": "handraw-skill", "type": "file", "required": false, "path": "~/.workbuddy/skills/handraw-style/"},
+        {"id": "handraw-vendor", "type": "file", "required": false, "path": "~/.workbuddy/skills/renjian-guancha/vendor/handraw-style-data/"}
+      ],
+      "setup": {
+        "official_home_url": "https://www.workbuddy.cn",
+        "official_docs_url": "https://www.workbuddy.cn/docs/workbuddy/Overview",
+        "steps": ["安装 handraw-style 技能，或确认 renjian-guancha 内置风格数据存在"],
+        "verify": "img.py list --styles 显示外挂风格包路径",
+        "security": "风格包为本地只读数据，脚本只读取不写入",
+        "verified_at": "2026-10-12",
+        "applies_to_version": "handraw-style 001–279 风格库"
+      },
+      "degradation": [
+        {
+          "capability": "style-pack",
+          "trigger": "未发现外挂风格包",
+          "fallback": "使用 config/default.yaml 内置 12 个风格族",
+          "user_input": "改用 --style 内置风格族名，或安装风格包",
+          "limitations": "279 个编号风格与 36 个主题色不可用；需要参考图激活的风格无法使用",
+          "evidence_label": "已验证",
+          "recovery": "安装 handraw-style 技能后重新运行",
+          "stop_condition": "内置风格族足够时继续出图"
+        },
+        {
+          "capability": "compose-prompt",
+          "trigger": "风格缺失或编号不在风格库内",
+          "fallback": "忽略风格，只用主题与场景默认负面词组装提示词",
+          "user_input": "换一个风格编号，或改用内置风格族名",
+          "limitations": "出图风格由模型自由发挥，不保证与其他图一致",
+          "evidence_label": "已验证",
+          "recovery": "用 img.py list --styles 查看可用风格后重选",
+          "stop_condition": "风格无法确认时不虚构风格名"
+        }
+      ]
+    },
+    {
+      "id": "html-renderer",
+      "type": "network",
+      "required": false,
+      "auth_type": "none",
+      "capabilities": ["render-html"],
+      "checks": [
+        {"id": "gotenberg-local", "type": "url", "required": false, "url": "http://127.0.0.1:3980/health", "method": "GET", "expected_status": [200]}
+      ],
+      "setup": {
+        "official_home_url": "https://gotenberg.dev",
+        "official_docs_url": "https://gotenberg.dev/docs/getting-started",
+        "steps": ["本地启动 Gotenberg 容器，或安装 Chromium 供 headless 渲染"],
+        "verify": "bash scripts/html2png.sh 输入.html 输出.png 能产出 PNG",
+        "security": "渲染在本机完成，HTML 内容不外传",
+        "verified_at": "2026-10-12",
+        "applies_to_version": "Gotenberg 7+ 或 Chromium headless"
+      },
+      "degradation": [
+        {
+          "capability": "render-html",
+          "trigger": "Gotenberg 与 Chromium 都不可用",
+          "fallback": "改用生图管线，或交付 HTML 由用户自行导出",
+          "user_input": "启动渲染器或改用 --scene article-illustration 等生图场景",
+          "limitations": "信息图与示意图场景无法出图",
+          "evidence_label": "未验证",
+          "recovery": "启动 Gotenberg：docker run -p 3980:3000 gotenberg/gotenberg:8",
+          "stop_condition": "渲染器不可用时不用生图冒充排版图"
+        }
+      ]
+    }
+  ],
+  "functional_degradations": [
+    {
+      "capability": "render-html",
+      "trigger": "Gotenberg 与 Chromium 都不可用，或解释器缺 Pillow/numpy",
+      "fallback": "改用生图管线，或交付 HTML 由用户自行导出",
+      "user_input": "启动渲染器，或改用 --scene article-illustration 等生图场景；解释器缺依赖时用 IMAGE_SKILL_PYTHON 指定装好 Pillow 与 numpy 的解释器",
+      "limitations": "信息图与示意图场景无法出图，文字精确排版能力不可用",
+      "evidence_label": "未验证",
+      "recovery": "启动 Gotenberg：docker run -p 3980:3000 gotenberg/gotenberg:8",
+      "stop_condition": "渲染器不可用时不用生图冒充排版图"
+    },
+    {
+      "capability": "style-pack",
+      "trigger": "外挂风格包未安装，或包内没有 images 目录",
+      "fallback": "回落内置 12 个风格族；需要参考图的风格降级为纯文字激活并打印说明",
+      "user_input": "安装完整风格包，或改用内置风格族名",
+      "limitations": "编号风格、主题色、版式模板不可用；风格还原度低于带参考图的路径",
+      "evidence_label": "已验证",
+      "recovery": "安装含 images 目录的完整 handraw-style 技能后重跑",
+      "stop_condition": "不虚构参考图路径，不声称已按某编号风格还原"
+    },
+    {
+      "capability": "postprocess",
+      "trigger": "未安装 Pillow",
+      "fallback": "跳过 trim / resize / sheet，直接交付原图",
+      "user_input": "需要裁白边时安装 Pillow",
+      "limitations": "输出可能带白边、尺寸未归一化",
+      "evidence_label": "已验证",
+      "recovery": "pip install pillow 后重跑后处理步骤",
+      "stop_condition": "后处理失败不判定为出图失败"
+    },
+    {
+      "capability": "generate-image",
+      "trigger": "渠道返回 403 且 region 为 needs_proxy",
+      "fallback": "提示配置该渠道的 proxy 字段并跳过",
+      "user_input": "在 config/user.yaml 或环境变量中配置代理地址",
+      "limitations": "该渠道本轮不可用，自动回退到下一个候选",
+      "evidence_label": "推断",
+      "recovery": "配置代理后重跑，或改用 region 为 cn 的渠道",
+      "stop_condition": "所有候选都因网络失败时停止"
+    },
+    {
+      "capability": "compose-prompt",
+      "trigger": "风格需要参考图但风格包内没有 images 目录",
+      "fallback": "降级为纯文字激活（风格名 + 正向特征）并打印说明",
+      "user_input": "无；需要 100% 风格还原时安装完整风格包",
+      "limitations": "风格还原度低于带参考图的路径",
+      "evidence_label": "已验证",
+      "recovery": "安装含 images/ 的完整 handraw-style 技能",
+      "stop_condition": "不虚构参考图路径"
+    }
+  ]
+}

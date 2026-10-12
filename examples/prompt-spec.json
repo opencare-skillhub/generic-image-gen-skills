@@ -1,0 +1,20 @@
+{
+  "v": 1,
+  "scene": "article-illustration",
+  "theme": "一位父亲在病床边削苹果，女儿坐在旁边看着窗外",
+  "style": {
+    "pack": "handraw",
+    "number": "042",
+    "name": "Beatrix Potter Watercolor",
+    "traits": "细笔水彩、柔和田园色、纸纹可见、轮廓温和不锐利"
+  },
+  "color": {"id": "C-07", "name_zh": "橄榄绿", "name_en": "Olive Green"},
+  "layout": "SC-001",
+  "mode": "pure-image",
+  "type": "scene",
+  "reference_image": "",
+  "reference_required": false,
+  "negative": null,
+  "extra": "横构图，左侧留白，人物占画面右侧三分之一",
+  "channel": {"profile": "hq"}
+}

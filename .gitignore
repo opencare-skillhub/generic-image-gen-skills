@@ -1,0 +1,8 @@
+# 用户配置含凭据时不要提交
+config/user.yaml
+.venv/
+__pycache__/
+*.pyc
+output/
+.workbuddy/
+.DS_Store
